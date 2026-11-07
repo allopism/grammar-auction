@@ -1,0 +1,44 @@
+{
+  "rules": {
+    "games": {
+      ".read": "auth != null && query.orderByChild === 'host' && query.equalTo === auth.uid",
+      ".indexOn": ["host"],
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.child('host').val() === auth.uid) || data.child('host').val() === auth.uid)",
+        "players": {
+          "$uid": {
+            ".write": "auth != null && auth.uid === $uid && ((!data.exists() && root.child('games/' + $code + '/host').exists() && root.child('games/' + $code + '/state/phase').val() !== 'end' && newData.child('money').val() === root.child('games/' + $code + '/config/start').val()) || (data.exists() && !newData.exists() && root.child('games/' + $code + '/state/phase').val() === 'lobby'))",
+            ".validate": "newData.hasChildren(['name', 'money'])",
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20"
+            },
+            "money": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "emoji": {
+              ".validate": "newData.isString() && newData.val().length <= 8"
+            },
+            "color": {
+              ".validate": "newData.isString() && newData.val().matches(/^#[0-9A-Fa-f]{6}$/)"
+            },
+            "joinedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
+        "bids": {
+          "$idx": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid && root.child('games/' + $code + '/players/' + $uid).exists() && root.child('games/' + $code + '/state/phase').val() === 'bidding' && $idx === root.child('games/' + $code + '/state/idx').val() + ''",
+              ".validate": "newData.isNumber() && (newData.val() === 0 || (newData.val() >= root.child('games/' + $code + '/config/minBid').val() && newData.val() <= root.child('games/' + $code + '/players/' + $uid + '/money').val() && (newData.val() % root.child('games/' + $code + '/config/minBid').val() === 0 || newData.val() === root.child('games/' + $code + '/players/' + $uid + '/money').val())))"
+            }
+          }
+        }
+      }
+    }
+  }
+}

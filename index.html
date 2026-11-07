@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Subasta de frases</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔨</text></svg>">
+<link rel="preload" href="fonts/baloo2-latin.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* Baloo 2 alojada junto a la app (licencia en fonts/OFL.txt): la página no se conecta a Google Fonts */
+@font-face{font-family:"Baloo 2";font-style:normal;font-weight:500 800;font-display:swap;src:url(fonts/baloo2-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C4,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Baloo 2";font-style:normal;font-weight:500 800;font-display:swap;src:url(fonts/baloo2-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+:root{
+  --bg:#3DA5F4; --bg2:#2E8FDB; --ink:#1E2A5A; --card:#FFFFFF; --soft:#EEF5FF;
+  --gold:#FFC83D; --red:#FF5A5F; --green:#2EC27E; --muted:#5B6690; --line:#1E2A5A;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#1B2550;--bg2:#141C40;--ink:#F3F6FF;--card:#26336B;--soft:#2F3E7D;--muted:#B8C2EA;--line:#0B1030}
+}
+:root[data-theme="dark"]{--bg:#1B2550;--bg2:#141C40;--ink:#F3F6FF;--card:#26336B;--soft:#2F3E7D;--muted:#B8C2EA;--line:#0B1030}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;min-height:100%}
+body{font-family:"Baloo 2",system-ui,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);
+  background-image:radial-gradient(var(--bg2) 2px,transparent 2.5px);background-size:26px 26px;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:760px;margin:0 auto;padding:14px 14px 40px}
+h1,h2,h3,p{margin:0}
+h2{line-height:1.15}
+button{font:inherit;cursor:pointer;color:inherit}
+input,textarea,select{font:inherit;color:var(--ink)}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.title{display:flex;align-items:center;gap:10px;justify-content:center;color:#fff;text-shadow:0 3px 0 var(--line);
+  margin:6px 0 16px;font-size:clamp(1.8rem,8vw,2.6rem);font-weight:800;text-align:center;line-height:1.1}
+.gavel{display:inline-block;transform-origin:80% 80%}
+.gavel.hit{animation:hit .5s ease}
+@keyframes hit{30%{transform:rotate(-35deg)}60%{transform:rotate(10deg)}}
+.box{background:var(--card);border:3px solid var(--line);border-radius:22px;box-shadow:0 6px 0 var(--line);padding:16px;margin-bottom:18px}
+.center{text-align:center}
+.btn{border:3px solid var(--line);border-radius:16px;padding:10px 16px;background:var(--soft);font-weight:800;font-size:1.05rem;
+  box-shadow:0 4px 0 var(--line);transition:transform .08s,box-shadow .08s;min-height:48px}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.gold{background:var(--gold);color:#1E2A5A}.btn.green{background:var(--green);color:#fff}.btn.red{background:var(--red);color:#fff}
+.btn.big{font-size:1.3rem;padding:14px 18px;width:100%}
+.btn.small{min-height:40px;padding:6px 12px;font-size:.95rem;border-radius:12px}
+.btn.link{background:none;border:none;box-shadow:none;color:#fff;text-decoration:underline;font-weight:700;min-height:auto}
+label.f{display:block;font-weight:700;margin:10px 0 4px}
+.hint{color:var(--muted);font-size:.92rem;margin-top:4px;font-weight:500}
+input[type=number],input[type=text],textarea,select{width:100%;border:3px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--soft);font-size:1.05rem}
+textarea{min-height:170px;resize:vertical;line-height:1.35}
+.codeinput{font-size:2rem!important;text-align:center;letter-spacing:.3em;font-weight:800}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:420px){.grid2{grid-template-columns:1fr}}
+.err{background:var(--red);color:#fff;border:3px solid var(--line);border-radius:14px;padding:8px 12px;font-weight:700;margin-bottom:12px;text-align:center}
+.msg{background:var(--gold);color:#1E2A5A;border:3px solid var(--line);border-radius:14px;padding:10px 12px;font-weight:700;margin-bottom:14px;text-align:center}
+.dot{flex:none;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:3px solid var(--line);font-size:1.25rem}
+.dot.xl{width:84px;height:84px;font-size:2.6rem;margin:0 auto 8px}
+.scorebar{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 10px;margin-bottom:10px}
+.chip{flex:none;display:flex;align-items:center;gap:8px;background:var(--card);border:3px solid var(--line);border-radius:999px;padding:3px 14px 3px 3px;box-shadow:0 3px 0 var(--line);font-weight:800}
+.chip .dot{width:32px;height:32px;font-size:1rem;border-width:2px}
+.coins{white-space:nowrap}
+/* Código de sala */
+.roomcode{font-size:clamp(3rem,16vw,5.5rem);font-weight:800;letter-spacing:.12em;line-height:1;margin:6px 0}
+.qr{display:inline-block;background:#fff;padding:8px;border-radius:14px;border:3px solid var(--line);margin-top:10px}
+.qr svg{display:block;width:180px;height:180px}
+.url{word-break:break-all;font-weight:700;color:var(--muted);font-size:.95rem;margin-top:6px}
+/* Frase */
+.lot{position:relative;text-align:center;padding:22px 16px 26px;overflow:hidden}
+.num{display:inline-block;background:var(--gold);color:#1E2A5A;border:3px solid var(--line);border-radius:999px;padding:0 14px;font-weight:800;margin-bottom:10px}
+.phrase{font-size:clamp(1.5rem,6.5vw,2.4rem);font-weight:800;line-height:1.2;overflow-wrap:anywhere}
+.stamp{position:absolute;right:10px;top:10px;font-weight:800;color:#fff;padding:4px 14px;border-radius:12px;border:3px solid var(--line);
+  transform:rotate(8deg);animation:stamp .35s cubic-bezier(.2,1.6,.4,1)}
+.stamp.ok{background:var(--green)}.stamp.bad{background:var(--red)}
+@keyframes stamp{from{transform:scale(2.4) rotate(8deg);opacity:0}}
+/* Listas de jugadores */
+.plist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;margin-bottom:18px}
+.pcard{background:var(--card);border:3px solid var(--line);border-radius:18px;box-shadow:0 4px 0 var(--line);padding:10px;display:flex;gap:10px;align-items:center}
+.pcard .info{flex:1;min-width:0}
+.pcard .name{font-weight:800;font-size:1.1rem;line-height:1.1;overflow-wrap:anywhere}
+.pcard .sub{color:var(--muted);font-weight:700;font-size:.92rem}
+.pcard .right{font-weight:800;font-size:1.15rem;text-align:right;white-space:nowrap}
+.up{color:var(--green)}.down{color:var(--red)}.zero{color:var(--muted)}
+.pcard.col{flex-direction:column;align-items:stretch}
+.pcard.col .top{display:flex;gap:10px;align-items:center}
+.kick{background:none;border:none;font-size:1.1rem;color:var(--muted);padding:4px;min-width:32px}
+/* Alumno: puja */
+.stepper{display:flex;align-items:center;gap:8px}
+.stepper .btn{width:58px;padding:0;font-size:1.8rem}
+.amount{flex:1;text-align:center;font-size:2.2rem;font-weight:800;background:var(--soft);border:3px solid var(--line);border-radius:16px;min-height:58px;display:grid;place-items:center}
+.quick{display:flex;gap:8px;margin-top:10px}
+.quick .btn{flex:1}
+.actions{display:flex;flex-direction:column;gap:10px}
+.row{display:flex;gap:10px}.row>*{flex:1}
+.toolbar{display:flex;justify-content:space-between;gap:8px;margin-top:14px;flex-wrap:wrap}
+.bigdelta{font-size:clamp(2.6rem,14vw,4rem);font-weight:800;line-height:1;margin:8px 0}
+.status{font-size:1.1rem;font-weight:700}
+.waiting{font-size:3rem;display:inline-block;animation:bob 1.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+.podium{display:flex;flex-direction:column;gap:10px}
+.place{display:flex;align-items:center;gap:12px;background:var(--card);border:3px solid var(--line);border-radius:18px;padding:10px 14px;box-shadow:0 4px 0 var(--line)}
+.place .pos{font-size:1.8rem;width:44px;text-align:center}
+.place .name{flex:1;font-weight:800;font-size:1.15rem;overflow-wrap:anywhere}
+.place .coins{font-weight:800;font-size:1.2rem}
+.place.first{background:var(--gold);color:#1E2A5A}
+.place.me{outline:4px dashed var(--green);outline-offset:2px}
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:50}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="wrap">
+  <h1 class="title"><span class="gavel" id="gavel">🔨</span>Subasta de frases</h1>
+  <main id="app"><div class="box center"><span class="waiting">🪙</span><p class="status">Cargando…</p></div></main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"
+  integrity="sha512-ZDSPMa/JM1D+7kdg2x3BsruQ6T/JpJo3jWDWkCZsP+5yVyp1KfESqLI+7RqB5k24F7p2cV7i2YHh/890y6P6Sw=="
+  crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="module">
+
+// La configuración vive fuera del repo; la seguridad de los datos está en database.rules.json
+import { firebaseConfig } from "./firebase-config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, set, get, update, remove, onValue, serverTimestamp, query, orderByChild, equalTo } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const app = document.getElementById("app");
+const params = new URLSearchParams(location.search);
+const IS_HOST = params.has("profe");
+const COLORS = ["#FF5A5F","#FFC83D","#2EC27E","#8B5CF6","#FF8A3D","#14B8A6","#EC4899","#60A5FA"];
+const EMOJIS = ["🦊","🐸","🐼","🦁","🐙","🐧","🦄","🐯","🐨","🐵","🐰","🐻","🦉","🐢","🐳","🦖"];
+const fmt = n => (n||0).toLocaleString("es-ES") + " 🪙";
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LS = {
+  get(k){try{return localStorage.getItem(k)}catch(e){return null}},
+  set(k,v){try{localStorage.setItem(k,v)}catch(e){}},
+  del(k){try{localStorage.removeItem(k)}catch(e){}}
+};
+const pick = a => a[Math.floor(Math.random()*a.length)];
+const $ = id => document.getElementById(id);
+const DAY = 24 * 60 * 60 * 1000;   // antigüedad a partir de la cual una sala se considera abandonada
+function hitGavel(){const g=$("gavel");g.classList.remove("hit");void g.offsetWidth;g.classList.add("hit")}
+const safeColor = c => /^#[0-9A-Fa-f]{6}$/.test(c) ? c : "#ccc";
+const avatar = (p, cls="") => `<span class="dot ${cls}" style="background:${safeColor(p.color)}">${esc(p.emoji||"🙂")}</span>`;
+
+const fb = initializeApp(firebaseConfig);
+const auth = getAuth(fb);
+const db = getDatabase(fb);
+const gref = (path="") => ref(db, `games/${code}${path ? "/" + path : ""}`);
+
+let uid = null, code = null, game = null, unsub = null, started = false;
+let draft = {};          // puja en preparación del alumno, por frase
+let lastFx = "";          // evita repetir confeti
+
+onAuthStateChanged(auth, u => { if (u && !started) { started = true; uid = u.uid; boot(); } });
+signInAnonymously(auth).catch(e => {
+  console.error(e);
+  app.innerHTML = `<div class="box"><h2>⚠️ No se pudo conectar</h2><p class="hint" style="font-size:1rem">
+  Revisa que en Firebase ▸ Authentication esté activado el acceso <b>Anónimo</b> y que el dominio de esta web esté en <b>Dominios autorizados</b>.</p></div>`;
+});
+
+async function boot(){
+  const key = IS_HOST ? "subasta-host-code" : "subasta-player-code";
+  const saved = LS.get(key);
+  const urlCode = IS_HOST ? null : params.get("c");
+  // Si el QR apunta a otra sala, se olvida la guardada
+  if (saved && (!urlCode || urlCode === saved)) {
+    try {
+      const snap = await get(ref(db, `games/${saved}`));
+      const g = snap.val();
+      // El profe no recupera salas viejas: así llega a "Crear sala", que las limpia
+      const ok = g && (IS_HOST ? g.host === uid && Date.now() - (g.createdAt || 0) < DAY : g.players && g.players[uid]);
+      if (ok) return watch(saved);
+    } catch(e) { console.error(e); }
+  }
+  if (saved) LS.del(key);
+  IS_HOST ? renderHostSetup() : renderJoin(urlCode || "");
+}
+
+function watch(c){
+  code = c;
+  if (unsub) unsub();
+  unsub = onValue(ref(db, `games/${c}`), snap => {
+    game = snap.val();
+    if (!game) {
+      unsub(); unsub = null; code = null;
+      if (IS_HOST) { LS.del("subasta-host-code"); renderHostSetup(); }
+      else { LS.del("subasta-player-code"); renderJoin("", "La partida ha terminado. ¡Gracias por jugar!"); }
+      return;
+    }
+    IS_HOST ? renderHost() : renderPlayer();
+  }, err => { console.error(err); });
+}
+
+/* ---------- utilidades del juego ---------- */
+const players = () => Object.entries(game.players || {}).map(([id,p]) => ({id,...p}))
+  .filter(p => p.name).sort((a,b) => (a.joinedAt||0) - (b.joinedAt||0));
+const st = () => game.state || {};
+const bidOf = id => (game.bids && game.bids[st().idx] || {})[id];
+const resOf = id => (game.results && game.results[st().idx] || {})[id];
+function recovery(bid){
+  const c = game.config;
+  const r = c.recMode === "pct" ? Math.round(bid * c.recVal / 100) : c.recVal;
+  return Math.min(r, bid);
+}
+const recText = () => game.config.recMode === "pct" ? `el ${game.config.recVal}% de lo pujado` : fmt(game.config.recVal);
+function scorebar(){
+  return `<div class="scorebar">${players().map(p => `<div class="chip">${avatar(p)}<span>${esc(p.name)}</span><span class="coins">${fmt(p.money)}</span></div>`).join("")}</div>`;
+}
+function lot(){
+  const s = st();
+  return `<section class="box lot"><span class="num">Frase ${s.idx+1} de ${s.total}</span>
+    <p class="phrase">${esc(s.phrase)}</p>
+    ${s.phase==="reveal" ? `<span class="stamp ${s.verdict}">${s.verdict==="ok"?"✅ Correcta":"❌ Incorrecta"}</span>` : ""}</section>`;
+}
+const signed = d => d > 0 ? "+" + d.toLocaleString("es-ES") : d ? d.toLocaleString("es-ES") : "±0";
+const tone = d => d > 0 ? "up" : d < 0 ? "down" : "zero";
+// Los empatados comparten puesto (1, 1, 3…)
+const rankOf = (p, ps) => 1 + ps.filter(q => q.money > p.money).length;
+function podium(meId){
+  const medal = ["🥇","🥈","🥉"], ps = players();
+  return `<div class="podium">${[...ps].sort((a,b)=>b.money-a.money).map(p => { const k = rankOf(p, ps);
+    return `<div class="place ${k===1?"first":""} ${p.id===meId?"me":""}"><span class="pos">${medal[k-1]||k}</span>${avatar(p)}
+     <span class="name">${esc(p.name)}</span><span class="coins">${fmt(p.money)}</span></div>`; }).join("")}</div>`;
+}
+// Final de una partida con un solo jugador: no hay rivales, se compara con el dinero inicial
+function soloSummary(p, you){
+  const start = game.config.start, d = p.money - start;
+  const text = d > 0 ? (you ? "🎉 ¡Has conseguido más dinero del que tenías!" : "🎉 ¡Ha conseguido más dinero del que tenía!")
+    : d === 0 ? (you ? "😐 Terminas igual que empezaste." : "😐 Termina igual que empezó.")
+    : (you ? "😬 Esta vez has perdido dinero. ¡A la próxima!" : "😬 Esta vez ha perdido dinero.");
+  return `<section class="box center">${avatar(p,"xl")}<h2 style="font-size:1.8rem">🏁 ¡Fin de la subasta!</h2>
+    <div class="bigdelta ${tone(d)}">${signed(d)} 🪙</div>
+    <p class="status">${text}</p>
+    <p class="hint" style="font-size:1rem;margin-top:6px">${you ? "Empezaste" : "Empezó"} con ${fmt(start)} y ${you ? "terminas" : "termina"} con ${fmt(p.money)}.</p></section>`;
+}
+
+/* =====================================================================
+   VISTA DEL PROFESOR
+   ===================================================================== */
+function renderHostSetup(err){
+  let saved = {};
+  try { saved = JSON.parse(LS.get("subasta-host-setup") || "{}"); } catch(e) {}
+  const c = Object.assign({start:1000,minBid:100,recMode:"pct",recVal:50,
+    phrases:"Yesterday I go to the park.\nShe doesn't like apples.\nThey has two dogs.\nWe were playing football when it started to rain."}, saved);
+  app.innerHTML = `
+  ${err ? `<div class="err">${esc(err)}</div>` : ""}
+  <section class="box"><h2>⚙️ Preparar la partida</h2>
+    <div class="grid2">
+      <div><label class="f" for="start">Dinero inicial</label><input id="start" type="number" min="1" inputmode="numeric" value="${c.start}"></div>
+      <div><label class="f" for="minBid">Puja mínima</label><input id="minBid" type="number" min="1" inputmode="numeric" value="${c.minBid}">
+        <p class="hint">Se puja en múltiplos de esta cantidad.</p></div>
+    </div>
+    <label class="f">Si pujan por una frase incorrecta y explican el error, recuperan…</label>
+    <div class="grid2">
+      <select id="recMode"><option value="pct" ${c.recMode==="pct"?"selected":""}>Un porcentaje de lo pujado</option>
+        <option value="fixed" ${c.recMode==="fixed"?"selected":""}>Una cantidad fija</option></select>
+      <input id="recVal" type="number" min="0" inputmode="numeric" value="${c.recVal}" aria-label="Cantidad a recuperar">
+    </div>
+    <p class="hint">Nunca recuperan más de lo que pujaron.</p>
+  </section>
+  <section class="box"><h2>📝 Frases</h2>
+    <label class="f" for="phrases">Escribe una frase por línea</label>
+    <textarea id="phrases">${esc(c.phrases)}</textarea>
+    <p class="hint">No hace falta marcar cuáles son correctas: lo decides tú al revelar cada frase.</p>
+  </section>
+  <button class="btn gold big" id="create">🔨 Crear sala</button>`;
+
+  // Un campo vacío vuelve al valor por defecto; un número escrito se respeta (y se valida al crear)
+  const num = (id, def) => { const n = parseInt($(id).value); return Number.isNaN(n) ? def : n; };
+  const read = () => {
+    const v = {
+      start: num("start", 1000),
+      minBid: num("minBid", 100),
+      recMode: $("recMode").value,
+      recVal: Math.max(0, num("recVal", 0)),
+      phrases: $("phrases").value
+    };
+    LS.set("subasta-host-setup", JSON.stringify(v));
+    return v;
+  };
+  app.querySelectorAll("input,select,textarea").forEach(el => el.addEventListener("change", read));
+  const create = $("create");
+  create.onclick = async () => {
+    const v = read();
+    const list = v.phrases.split("\n").map(s => s.trim()).filter(Boolean);
+    if (v.start < 1) return renderHostSetup("El dinero inicial tiene que ser al menos 1.");
+    if (v.minBid < 1) return renderHostSetup("La puja mínima tiene que ser al menos 1.");
+    if (v.minBid > v.start) return renderHostSetup("La puja mínima no puede ser mayor que el dinero inicial: nadie podría pujar.");
+    if (!list.length) return renderHostSetup("Escribe al menos una frase para crear la sala.");
+    create.disabled = true; create.textContent = "Creando sala…";
+    await cleanOldGames();
+    try {
+      let newCode = null;
+      for (let i = 0; i < 8 && !newCode; i++) {
+        const c = String(10000 + Math.floor(Math.random() * 90000));
+        if (!(await get(ref(db, `games/${c}`))).exists()) newCode = c;
+      }
+      if (!newCode) throw new Error("sin código");
+      await set(ref(db, `games/${newCode}`), {
+        host: uid, createdAt: serverTimestamp(),
+        config: {start:v.start, minBid:v.minBid, recMode:v.recMode, recVal:v.recVal},
+        phrases: list,
+        state: {phase:"lobby", idx:0, total:list.length}
+      });
+      LS.set("subasta-host-code", newCode);
+      watch(newCode);
+    } catch(e) {
+      console.error(e);
+      renderHostSetup("No se pudo crear la sala. Revisa que las reglas de la base de datos estén publicadas.");
+    }
+  };
+}
+
+// Borra las salas de este profe con más de un día. Si falla, la sala se crea igualmente.
+async function cleanOldGames(){
+  try {
+    const snap = await get(query(ref(db, "games"), orderByChild("host"), equalTo(uid)));
+    const old = {};
+    snap.forEach(g => { if (Date.now() - (g.val().createdAt || 0) > DAY) old[g.key] = null; });
+    if (Object.keys(old).length) await update(ref(db, "games"), old);
+  } catch(e) { console.error(e); }
+}
+
+function renderHost(){
+  const s = st(), ps = players(), idx = s.idx, solo = ps.length === 1;
+  let html = "";
+
+  if (s.phase === "lobby") {
+    const url = location.origin + location.pathname + "?c=" + code;
+    let qrSvg = "";
+    try { const q = qrcode(0, "M"); q.addData(url); q.make(); qrSvg = q.createSvgTag({cellSize:5, margin:0, scalable:true}); } catch(e) {}
+    html = `
+    <section class="box center">
+      <h2>Entrad con este código</h2>
+      <p class="roomcode">${code}</p>
+      ${qrSvg ? `<div class="qr">${qrSvg}</div>` : ""}
+      <p class="url">${esc(url)}</p>
+    </section>
+    <section class="box"><h2>👥 En la sala: ${ps.length}</h2>
+      ${ps.length ? `<div class="plist" style="margin:12px 0 0">${ps.map(p => `<div class="pcard">${avatar(p)}<div class="info"><div class="name">${esc(p.name)}</div></div>
+        <button class="kick" data-kick="${p.id}" aria-label="Sacar a ${esc(p.name)}">✕</button></div>`).join("")}</div>`
+      : `<p class="hint" style="margin-top:8px"><span class="waiting" style="font-size:1.6rem">⏳</span> Esperando a que entren los alumnos…</p>`}
+    </section>
+    <button class="btn gold big" id="go" ${ps.length ? "" : "disabled"}>🔨 Empezar la subasta</button>`;
+  }
+
+  else if (s.phase === "bidding") {
+    // Quien no llega a la puja mínima no puede decidir: no cuenta en el total
+    const canBid = p => p.money >= game.config.minBid;
+    const active = ps.filter(canBid), decided = active.filter(p => bidOf(p.id) !== undefined).length;
+    const status = !active.length ? "nadie tiene dinero para pujar"
+      : solo ? (decided ? "ya ha decidido" : "pensando…")
+      : `han decidido ${decided} de ${active.length}`;
+    html = `${scorebar()}${lot()}
+    <div class="msg">✋ Pujas abiertas · ${status}</div>
+    <div class="plist">${ps.map(p => {
+      const b = bidOf(p.id);
+      const txt = !canBid(p) ? "😅 Sin dinero para pujar" : b === undefined ? "⏳ Pensando…" : b > 0 ? "🔨 Ha pujado" : "🙅 La deja pasar";
+      return `<div class="pcard">${avatar(p)}<div class="info"><div class="name">${esc(p.name)}</div><div class="sub">${txt}</div></div></div>`;
+    }).join("")}</div>
+    <button class="btn gold big" id="close">🔒 Cerrar pujas</button>`;
+  }
+
+  else if (s.phase === "closed") {
+    html = `${scorebar()}${lot()}
+    <div class="plist">${ps.map(p => {
+      const b = bidOf(p.id) || 0;
+      return `<div class="pcard">${avatar(p)}<div class="info"><div class="name">${esc(p.name)}</div><div class="sub">${b ? "Puja" : "No puja"}</div></div>
+      <div class="right">${b ? fmt(b) : "–"}</div></div>`;
+    }).join("")}</div>
+    <div class="actions">
+      <div class="row"><button class="btn green big" id="vOk">✅ Era correcta</button><button class="btn red big" id="vBad">❌ Era incorrecta</button></div>
+      <button class="btn" id="reopen">🔓 Reabrir pujas</button>
+    </div>`;
+  }
+
+  else if (s.phase === "reveal") {
+    const anyBid = ps.some(p => (resOf(p.id)||{}).bid > 0);
+    html = `${scorebar()}${lot()}
+    ${s.verdict==="bad" && anyBid ? `<div class="msg">💡 ${solo ? "¿Sabe" : "¿Quién sabe"} por qué está mal? Si lo explica bien, recupera ${recText()}.</div>` : ""}
+    ${s.verdict==="ok" && !anyBid ? `<div class="msg">😮 ¡Era correcta y ${solo ? "no pujó" : "nadie pujó"}! Oportunidad perdida.</div>` : ""}
+    <div class="plist">${ps.map(p => {
+      const r = resOf(p.id);
+      if (!r) return `<div class="pcard">${avatar(p)}<div class="info"><div class="name">${esc(p.name)}</div><div class="sub">Se unió tarde</div></div></div>`;
+      const d = r.delta || 0;
+      const canExplain = s.verdict==="bad" && r.bid > 0;
+      return `<div class="pcard col"><div class="top">${avatar(p)}<div class="info"><div class="name">${esc(p.name)}</div>
+        <div class="sub">${r.bid ? "Pujó " + fmt(r.bid) : "No pujó"}</div></div>
+        <div class="right ${tone(d)}">${signed(d)}${d ? " 🪙" : ""}</div></div>
+        ${canExplain ? `<button class="btn small ${r.explained?"green":""}" data-explain="${p.id}">${r.explained?"✔ Lo explicó bien":"💡 Ha sabido explicarlo"}</button>` : ""}
+      </div>`;
+    }).join("")}</div>
+    <div class="actions">
+      <button class="btn gold big" id="next">${idx+1 < s.total ? "Siguiente frase ➜" : "🏆 Ver resultados"}</button>
+      <button class="btn" id="undo">↩︎ Cambiar veredicto</button>
+    </div>`;
+  }
+
+  else if (s.phase === "end") {
+    html = (solo ? soloSummary(ps[0], false)
+      : `<section class="box center"><h2 style="font-size:1.8rem">🏆 ¡Fin de la subasta!</h2>
+      <p class="hint">Empezasteis con ${fmt(game.config.start)} cada uno.</p></section>${podium()}`)
+      + `<div class="actions" style="margin-top:18px"><button class="btn gold big" id="wipe">🧹 Borrar la partida y preparar otra</button></div>`;
+  }
+
+  if (s.phase !== "end" && s.phase !== "lobby") {
+    html += `<div class="toolbar"><span class="hint">Sala ${code}</span><button class="btn small" id="finish">🏁 Terminar ya</button></div>`;
+  }
+  if (s.phase === "lobby") {
+    html += `<div class="toolbar"><span></span><button class="btn small" id="wipe">🗑️ Cancelar sala</button></div>`;
+  }
+  app.innerHTML = html;
+
+  /* acciones */
+  const busy = async (btn, fn) => { if (btn) btn.disabled = true; try { await fn(); } catch(e) { console.error(e); alert("No se pudo guardar. Revisa la conexión."); if (btn) btn.disabled = false; } };
+
+  app.querySelectorAll("[data-kick]").forEach(b => b.onclick = () => {
+    const p = game.players[b.dataset.kick];
+    if (confirm(`¿Sacar a ${p.name} de la sala?`)) remove(gref("players/" + b.dataset.kick));
+  });
+  if ($("go")) $("go").onclick = e => busy(e.target, () => { hitGavel(); return update(gref("state"), {phase:"bidding", idx:0, phrase:game.phrases[0], verdict:null}); });
+  if ($("close")) $("close").onclick = e => busy(e.target, () => { hitGavel(); return update(gref("state"), {phase:"closed"}); });
+  if ($("reopen")) $("reopen").onclick = e => busy(e.target, () => update(gref("state"), {phase:"bidding"}));
+
+  const verdict = v => busy(null, () => {
+    const res = {};
+    ps.forEach(p => { const b = bidOf(p.id) || 0; res[p.id] = {bid:b, delta: v==="ok" ? b : -b, explained:false}; });
+    hitGavel();
+    if (v === "ok" && ps.some(p => (bidOf(p.id)||0) > 0)) confetti();
+    return update(gref(), {[`results/${idx}`]:res, "state/phase":"reveal", "state/verdict":v});
+  });
+  if ($("vOk")) $("vOk").onclick = () => verdict("ok");
+  if ($("vBad")) $("vBad").onclick = () => verdict("bad");
+
+  app.querySelectorAll("[data-explain]").forEach(b => b.onclick = () => busy(b, () => {
+    const id = b.dataset.explain, r = resOf(id), ex = !r.explained;
+    return update(gref(`results/${idx}/${id}`), {explained:ex, delta: -r.bid + (ex ? recovery(r.bid) : 0)});
+  }));
+  if ($("undo")) $("undo").onclick = e => busy(e.target, () => update(gref(), {[`results/${idx}`]:null, "state/phase":"closed", "state/verdict":null}));
+
+  // Suma al dinero de cada jugador el resultado de la frase revelada
+  const moneyUpdates = () => {
+    const upd = {};
+    ps.forEach(p => { const r = resOf(p.id); if (r && r.delta) upd[`players/${p.id}/money`] = p.money + r.delta; });
+    return upd;
+  };
+  if ($("next")) $("next").onclick = e => busy(e.target, () => {
+    const upd = moneyUpdates();
+    if (idx + 1 < s.total) upd.state = {phase:"bidding", idx:idx+1, total:s.total, phrase:game.phrases[idx+1]};
+    else { upd["state/phase"] = "end"; confetti(true); }
+    window.scrollTo({top:0, behavior:"smooth"});
+    return update(gref(), upd);
+  });
+  if ($("finish")) $("finish").onclick = e => {
+    const counts = s.phase === "reveal";
+    if (!confirm(`¿Terminar la subasta ahora? ${counts ? "El resultado de esta frase sí contará." : "La frase actual no contará."}`)) return;
+    busy(e.target, () => {
+      const upd = counts ? moneyUpdates() : {};
+      upd["state/phase"] = "end";
+      confetti(true);
+      return update(gref(), upd);
+    });
+  };
+  if ($("wipe")) $("wipe").onclick = e => {
+    if (!confirm("Se borrará la partida para todos. ¿Seguir?")) return;
+    busy(e.target, () => remove(gref()));
+  };
+}
+
+/* =====================================================================
+   VISTA DEL ALUMNO
+   ===================================================================== */
+function renderJoin(prefill="", note=""){
+  const savedName = LS.get("subasta-player-name") || "";
+  app.innerHTML = `
+  ${note ? `<div class="msg">${esc(note)}</div>` : ""}
+  <div id="joinErr"></div>
+  <section class="box">
+    <label class="f" for="code">Código de la sala</label>
+    <input id="code" class="codeinput" type="text" inputmode="numeric" maxlength="5" autocomplete="off" placeholder="00000" value="${esc(prefill)}">
+    <label class="f" for="nick">Tu apodo</label>
+    <input id="nick" type="text" maxlength="20" autocomplete="off" placeholder="Por ejemplo: Fox, Zorro, Rayo…" value="${esc(savedName)}">
+    <p class="hint">Usa un apodo, no tu nombre completo.</p>
+    <div style="margin-top:16px"><button class="btn gold big" id="join">🙋 Entrar</button></div>
+  </section>
+  <div class="center"><a class="btn link" href="?profe">Soy el profe</a></div>`;
+
+  const join = $("join"), nick = $("nick"), codeInput = $("code");
+  const showErr = m => { $("joinErr").innerHTML = `<div class="err">${esc(m)}</div>`; join.disabled = false; join.textContent = "🙋 Entrar"; };
+  join.onclick = async () => {
+    const c = codeInput.value.replace(/\D/g, "");
+    const name = nick.value.trim().slice(0, 20);
+    if (c.length !== 5) return showErr("El código tiene 5 números.");
+    if (!name) return showErr("Escribe tu nombre para entrar.");
+    join.disabled = true; join.textContent = "Entrando…";
+    try {
+      const g = (await get(ref(db, `games/${c}`))).val();
+      if (!g) return showErr("No hay ninguna sala con ese código. Revísalo.");
+      if (g.state && g.state.phase === "end") return showErr("Esa subasta ya ha terminado.");
+      if (!(g.players && g.players[uid])) {
+        await set(ref(db, `games/${c}/players/${uid}`), {
+          name, money: g.config.start, emoji: pick(EMOJIS), color: pick(COLORS), joinedAt: serverTimestamp()
+        });
+      }
+      LS.set("subasta-player-code", c);
+      LS.set("subasta-player-name", name);
+      watch(c);
+    } catch(e) { console.error(e); showErr("No se pudo entrar. Pregunta al profe."); }
+  };
+  [codeInput, nick].forEach(el => el.addEventListener("keydown", e => { if (e.key === "Enter") join.click(); }));
+}
+
+function renderPlayer(){
+  const me = game.players && game.players[uid];
+  if (!me) {
+    if (unsub) unsub(); unsub = null; code = null;
+    LS.del("subasta-player-code");
+    return renderJoin("", "Ya no estás en esta sala. Puedes volver a entrar con el código.");
+  }
+  const s = st(), c = game.config, idx = s.idx;
+  const head = `<section class="box center" style="padding:12px">
+    <div style="display:flex;align-items:center;gap:12px;justify-content:center">${avatar(me)}
+    <div style="text-align:left"><div style="font-weight:800;font-size:1.2rem">${esc(me.name)}</div>
+    <div style="font-weight:800;font-size:1.3rem">${fmt(me.money)}</div></div></div></section>`;
+  let html = head;
+
+  if (s.phase === "lobby") {
+    html += `<section class="box center">${avatar(me,"xl")}<h2>¡Ya estás dentro!</h2>
+      <p class="hint" style="font-size:1rem">Empiezas con ${fmt(c.start)}. Espera a que el profe empiece la subasta.</p>
+      <p style="margin-top:10px"><span class="waiting">⏳</span></p>
+      <p style="margin-top:14px"><button class="btn small" id="leave">🚪 Salir de la sala</button></p></section>`;
+  }
+
+  else if (s.phase === "bidding") {
+    const sent = bidOf(uid);
+    html += lot();
+    if (me.money < c.minBid) {
+      html += `<section class="box center"><p class="status">😅 No te llega para la puja mínima (${fmt(c.minBid)}). ¡Esta vez solo miras!</p></section>`;
+    } else {
+      if (draft[idx] === undefined) draft[idx] = sent > 0 ? sent : c.minBid;
+      const d = Math.min(draft[idx], me.money);
+      html += `<section class="box">
+        <p class="center status" style="margin-bottom:10px">¿Crees que es correcta? ¡Puja!</p>
+        <div class="stepper">
+          <button class="btn" id="minus" aria-label="Bajar puja" ${d <= c.minBid ? "disabled" : ""}>−</button>
+          <div class="amount">${d.toLocaleString("es-ES")}</div>
+          <button class="btn" id="plus" aria-label="Subir puja" ${d >= me.money ? "disabled" : ""}>+</button>
+        </div>
+        <div class="quick"><button class="btn small" id="half">Mitad</button><button class="btn small gold" id="all">¡Todo!</button></div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn gold big" id="send">🔨 Pujar ${fmt(d)}</button>
+          <button class="btn red" id="pass">🙅 Creo que está mal: la dejo pasar</button>
+        </div>
+      </section>
+      <div class="msg">${sent === undefined ? "Aún no has decidido." : sent > 0 ? `Has pujado ${fmt(sent)}. Puedes cambiarlo hasta que se cierren las pujas.` : "Has decidido dejarla pasar. Puedes cambiarlo hasta que se cierren las pujas."}</div>`;
+    }
+  }
+
+  else if (s.phase === "closed") {
+    const b = bidOf(uid) || 0;
+    html += lot() + `<section class="box center"><span class="waiting">🥁</span>
+      <h2 style="margin-top:6px">Pujas cerradas</h2>
+      <p class="status" style="margin-top:6px">${b ? `Has pujado ${fmt(b)}. ¿Será correcta?` : "La has dejado pasar. ¿Habrás acertado?"}</p></section>`;
+  }
+
+  else if (s.phase === "reveal") {
+    const r = resOf(uid);
+    html += lot();
+    if (!r) {
+      html += `<section class="box center"><p class="status">Has llegado a mitad de esta frase. ¡Juegas en la siguiente!</p></section>`;
+    } else {
+      const d = r.delta || 0;
+      let face, text;
+      if (s.verdict === "ok" && r.bid) { face = "🎉"; text = `¡Era correcta! Tu puja se duplica.`; }
+      else if (s.verdict === "ok") { face = "😮"; text = "Era correcta… ¡la próxima vez puja!"; }
+      else if (!r.bid) { face = "👏"; text = "¡Muy bien! Era incorrecta y la dejaste pasar."; }
+      else if (r.explained) { face = "💡"; text = `¡Bien explicado! Recuperas ${fmt(recovery(r.bid))}.`; }
+      else { face = "😬"; text = `Era incorrecta y pierdes tu puja.`; }
+      html += `<section class="box center"><div style="font-size:3.2rem">${face}</div>
+        <div class="bigdelta ${tone(d)}">${signed(d)} 🪙</div>
+        <p class="status">${text}</p>
+        <p class="hint" style="font-size:1rem;margin-top:6px">Te quedarás con ${fmt(me.money + d)}</p></section>
+        ${s.verdict === "bad" && r.bid && !r.explained ? `<div class="msg">✋ ¡Levanta la mano y explica por qué está mal! Puedes recuperar ${recText()}.</div>` : ""}`;
+      const fx = `${idx}-${s.verdict}-${r.explained}`;
+      if (fx !== lastFx) { lastFx = fx; if ((s.verdict === "ok" && r.bid) || r.explained) confetti(); }
+    }
+  }
+
+  else if (s.phase === "end") {
+    const ps = players(), solo = ps.length === 1;
+    const pos = rankOf(me, ps), tied = ps.filter(p => p.money === me.money).length > 1;
+    const title = pos === 1 ? (tied ? "🏆 ¡Empate en el primer puesto!" : "🏆 ¡Has ganado!")
+      : `Has quedado en el puesto ${pos}${tied ? " (empate)" : ""}`;
+    html = (solo ? soloSummary({...me, id:uid}, true)
+      : `<section class="box center">${avatar(me,"xl")}<h2 style="font-size:1.8rem">${title}</h2>
+      <p class="status" style="margin-top:4px">Terminas con ${fmt(me.money)}</p></section>${podium(uid)}`)
+      + `<div class="actions" style="margin-top:18px"><button class="btn" id="leave">🚪 Salir</button></div>`;
+    if (lastFx !== "end") { lastFx = "end"; if (solo ? me.money > c.start : pos <= 3) confetti(true); }
+  }
+
+  app.innerHTML = html;
+
+  const leaveBtn = $("leave");
+  if (leaveBtn) leaveBtn.onclick = () => { if (s.phase === "end" || confirm("¿Salir de la sala?")) leaveRoom(); };
+
+  /* acciones de puja */
+  if (s.phase === "bidding" && me.money >= c.minBid) {
+    const setDraft = v => { draft[idx] = Math.max(c.minBid, Math.min(me.money, v)); renderPlayer(); };
+    $("minus").onclick = () => setDraft(draft[idx] - c.minBid);
+    $("plus").onclick = () => setDraft(draft[idx] + c.minBid);
+    $("half").onclick = () => setDraft(Math.floor(me.money / 2 / c.minBid) * c.minBid);
+    $("all").onclick = () => setDraft(me.money);
+    const sendBid = async (btn, amount) => {
+      btn.disabled = true;
+      try { await set(gref(`bids/${idx}/${uid}`), amount); if (amount) hitGavel(); }
+      catch(e) { console.error(e); alert("Las pujas ya están cerradas."); btn.disabled = false; }
+    };
+    const send = $("send"), pass = $("pass");
+    send.onclick = () => sendBid(send, Math.min(draft[idx], me.money));
+    pass.onclick = () => sendBid(pass, 0);
+  }
+}
+
+// Cierra la sesión anónima para que el siguiente alumno del dispositivo empiece de cero
+async function leaveRoom(){
+  if (unsub) unsub();
+  unsub = null;
+  // En la sala de espera el alumno se borra de la lista del profe
+  if (st().phase === "lobby") { try { await remove(gref("players/" + uid)); } catch(e) { console.error(e); } }
+  code = null;
+  LS.del("subasta-player-code");
+  try { await signOut(auth); } catch(e) { console.error(e); }
+  location.replace(location.pathname);
+}
+
+/* ---------- confeti ---------- */
+function confetti(big){
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const cv = document.getElementById("confetti"), ctx = cv.getContext("2d");
+  cv.width = innerWidth; cv.height = innerHeight;
+  const parts = [];
+  for (let k = 0; k < (big ? 220 : 110); k++) parts.push({x:cv.width/2, y:cv.height*.35, vx:(Math.random()-.5)*14, vy:-Math.random()*14-4,
+    s:6+Math.random()*7, c:COLORS[k%COLORS.length], r:Math.random()*6, vr:(Math.random()-.5)*.3});
+  let f = 0;
+  (function step(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    parts.forEach(p => { p.vy += .4; p.x += p.vx; p.y += p.vy; p.r += p.vr; ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.r);
+      ctx.fillStyle = p.c; ctx.fillRect(-p.s/2,-p.s/2,p.s,p.s*.6); ctx.restore(); });
+    if (++f < 120) requestAnimationFrame(step); else ctx.clearRect(0,0,cv.width,cv.height);
+  })();
+}
+</script>
+</body>
+</html>
