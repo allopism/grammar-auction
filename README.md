@@ -1,4 +1,4 @@
-# 🔨 Phrase Auction (Subasta de frases)
+# 🔨 Phrase Auction
 
 A real-time classroom game for **Spanish ESL (English as a Second Language) learners**. Students bet virtual coins on whether English sentences are grammatically correct, each from their own phone.
 
